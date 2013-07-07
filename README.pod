@@ -31,9 +31,9 @@ IO::Vectored - Read from or write to multiple buffers at once
 
 Vectored-IO is sometimes called "scatter/gather IO". The idea is that instead of doing multiple C<read(2)> or C<write(2)> system calls for each string you wish to read/write, your userspace program creates a vector of pointers to the various strings and does a single system call.
 
-Although some people consider these interfaces contrary to the simple design principles of unix, they provide certain advantages which are described below.
+Although some people consider these interfaces contrary to the minimalist design principles of unix, they provide certain advantages which are described below.
 
-This module is an interface to your system's L<readv(2)|http://pubs.opengroup.org/onlinepubs/009695399/functions/readv.html> and L<writev(2)|http://pubs.opengroup.org/onlinepubs/009695399/functions/writev.html> vectored-IO system calls specified by POSIX.1. It exports the functions C<syswritev> and C<sysreadv> which are almost the same as the L<syswrite> and L<sysread> perl functions except for some minor differences described below.
+This module is an interface to your system's L<readv(2)|http://pubs.opengroup.org/onlinepubs/009695399/functions/readv.html> and L<writev(2)|http://pubs.opengroup.org/onlinepubs/009695399/functions/writev.html> vectored-IO system calls specified by POSIX.1. It exports the functions C<syswritev> and C<sysreadv> which are almost the same as the C<syswrite> and C<sysread> perl functions except for some minor differences described below.
 
 
 
@@ -51,7 +51,7 @@ Note that as with anything the performance benefits of vectored-IO will vary fro
 
 =head1 RETURN VALUES AND ERROR CONDITIONS
 
-As mentioned above, this module's interface tries to match C<syswrite> and C<sysread> so the same caveats that apply to those functions apply to the vectored interfaces. In particular, you should not mix these calls with userspace-buffered interfaces such as L<print> or L<seek>. Mixing the vectored interfaces with C<syswrite> and C<sysread> is fine though.
+As mentioned above, this module's interface tries to match C<syswrite> and C<sysread> so the same caveats that apply to those functions apply to the vectored interfaces. In particular, you should not mix these calls with userspace-buffered interfaces such as C<print> or C<seek>. Mixing the vectored interfaces with C<syswrite> and C<sysread> is fine though.
 
 C<syswritev> returns the number of bytes written (usually the sum of the lengths of all arguments). If it returns less, either there was an error indicated in C<$!> or you are using non-blocking IO in which case it is up to you to adjust it so that the next C<syswritev> points to the rest of the data.
 
