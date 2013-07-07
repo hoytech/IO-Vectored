@@ -1,0 +1,8 @@
+Changes
+lib/IO/Vectored.pm
+Makefile.PL
+MANIFEST
+MANIFEST.SKIP
+t/exceptions.t
+t/normal.t
+Vectored.xs
