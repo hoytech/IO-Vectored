@@ -1,0 +1,11 @@
+README
+Makefile
+Makefile.old
+MYMETA.*
+blib/
+pm_to_blib
+MANIFEST.bak
+IO-Vectored-*.tar.gz
+Vectored.bs
+Vectored.c
+Vectored.o
