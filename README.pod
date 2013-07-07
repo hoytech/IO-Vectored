@@ -33,7 +33,7 @@ Vectored-IO is sometimes called "scatter/gather IO". The idea is that instead of
 
 Although some people consider these interfaces contrary to the minimalist design principles of unix, they provide certain advantages which are described below.
 
-This module is an interface to your system's L<readv(2)|http://pubs.opengroup.org/onlinepubs/009695399/functions/readv.html> and L<writev(2)|http://pubs.opengroup.org/onlinepubs/009695399/functions/writev.html> vectored-IO system calls specified by POSIX.1. It exports the functions C<syswritev> and C<sysreadv> which are almost the same as the C<syswrite> and C<sysread> perl functions except for some minor differences described below.
+This module is an interface to your system's L<readv(2)|http://pubs.opengroup.org/onlinepubs/009695399/functions/readv.html> and L<writev(2)|http://pubs.opengroup.org/onlinepubs/009695399/functions/writev.html> vectored-IO system calls specified by POSIX.1. It exports the functions C<syswritev> and C<sysreadv> which are almost the same as the C<syswrite> and C<sysread> perl functions except that they accept multiple strings and have implicit length and offset parameters.
 
 
 
@@ -41,11 +41,11 @@ This module is an interface to your system's L<readv(2)|http://pubs.opengroup.or
 
 The first advantage of vectored-IO is that it reduces the number of system calls required. This will provide an atomicity guarantee for the writing of the data and also eliminate a constant performance overhead.
 
-Another potential advantage of vectored-IO is that doing multiple system calls can sometimes result in excessive network packets being sent. The classic example of this is a web-server handling a static file. If the server C<write(2)>s the HTTP headers and then C<write(2)>s the file data, the kernel might send the headers and file in separate network packets. A single packet would be better for latency and bandwidth. L<TCP_CORK|http://baus.net/on-tcp_cork/> is a solution to this issue but it is linux-specific and can require more system calls.
+Another potential advantage of vectored-IO is that doing multiple system calls can sometimes result in excessive network packets being sent. The classic example of this is a web-server handling a static file. If the server C<write(2)>s the HTTP headers and then C<write(2)>s the file data, the kernel might send the headers and file in separate network packets. A single packet would be better for latency and bandwidth usage. L<TCP_CORK|http://baus.net/on-tcp_cork/> is a solution to this issue but it is linux-specific and can require more system calls.
 
-Of course an alternative to vectored-IO is to copy the buffers together into a contiguous buffer before calling C<write(2)>. The performance trade-off is that a potentially large buffer needs to be allocated and then all the smaller buffers copied into it. Also, if your buffers are backed by memory-mapped files (created with say L<File::Map>) then this approach results in an unnecessary copy of the data to userspace. If you use vectored-IO then files can be copied directly from the file-system cache into the socket's L<mbuf|http://www.openbsd.org/cgi-bin/man.cgi?query=mbuf>. The non-standard C<sendfile(2)> system call can theoretically do one fewer copy but it requires a system call for each file sent, unlike vectored-IO.
+Of course an alternative to vectored-IO is to copy the buffers together into a contiguous buffer before calling C<write(2)>. The performance trade-off is that a potentially large buffer needs to be allocated and then all the smaller buffers copied into it. Also, if your buffers are backed by memory-mapped files (created with say L<File::Map>) then this approach results in an unnecessary copy of the data to userspace. If you use vectored-IO then files can be copied directly from the file-system cache into the socket's L<mbuf|http://www.openbsd.org/cgi-bin/man.cgi?query=mbuf>. The non-standard C<sendfile(2)> system call can theoretically do one less copy but it requires a system call for each file sent, unlike vectored-IO.
 
-Note that as with anything the performance benefits of vectored-IO will vary from application to application and you shouldn't retro-fit it onto an application unless benchmarking has shown measurable benefits. However, vectored-IO can sometimes be more programmer convenient than regular IO and may be worth using for that reason alone.
+Note that as with anything the performance benefits of vectored-IO will vary from application to application and you shouldn't retro-fit it onto an application unless benchmarking has shown measurable benefits. However, vectored-IO can sometimes be more programmer-convenient than regular IO and may be worth using for that reason alone.
 
 
 
@@ -59,7 +59,7 @@ C<sysreadv> returns the number of bytes read up to the sum of the lengths of all
 
 Both of these functions can also return C<undef> if the underlying C<readv(2)> or C<writev(2)> system calls fail for any reason other than C<EINTR>. In this case, C<$!> will be set with the error.
 
-Like C<sysread>/C<syswrite>, the vectored versions also croak for various reasons (see the C<t/exceptions.t> test for a full list). Some examples are: passing in too many arguments (greater than the C<IO::Vectored::IOV_MAX> constant), trying to use a closed file-handle, and trying to write to a read-only/constant string.
+Like C<sysread>/C<syswrite>, the vectored versions also croak for various reasons such as passing in too many arguments (greater than the C<IO::Vectored::IOV_MAX> constant), trying to use a closed file-handle, or trying to write to a read-only/constant string (see the C<t/exceptions.t> test for a full list).
 
 
 
@@ -67,9 +67,9 @@ Like C<sysread>/C<syswrite>, the vectored versions also croak for various reason
 
 To the extent possible, make it do the right thing for file-handles with non-raw encodings and unicode strings. Any test-cases are appreciated.
 
-Investigate if there is a performance benefit in eliminating the perl wrapper subs and re-implementing their logic in XS.
+Investigate if there is a performance benefit in eliminating the perl subs and re-implementing their logic in XS.
 
-Think about truncating strings like C<sysread> does. Please don't depend on the non-truncation behaviour of C<sysreadv> until version 1.000: You have been warned. :)
+Think about truncating strings like C<sysread> does. Don't depend on the non-truncating behaviour of C<sysreadv> until version 1.000: You have been warned. :)
 
 Think about whether this module should support vectors larger than C<IOV_MAX> by calling C<writev>/C<readv> multiple times. This should probably be opt-in because it breaks atomicity guarantees.
 
@@ -85,9 +85,11 @@ Useful modules to combine with vectored-IO:
 
 L<File::Map> / L<Sys::Mmap>
 
-L<String::Slice> / L<overload::substr>
+L<String::Slice>
 
-C<sendfile()> is less general than and not really compatible with vectored-IO, but here are some perl interfaces:
+L<overload::substr>
+
+Although C<sendfile()> is less general than -- and not really compatible with -- vectored-IO, here are some perl interfaces:
 
 L<Sys::Sendfile> / L<Sys::Syscall> / L<Sys::Sendfile::FreeBSD>
 
