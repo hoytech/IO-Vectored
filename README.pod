@@ -43,15 +43,15 @@ The first advantage of vectored-IO is that it reduces the number of system calls
 
 Another potential advantage of vectored-IO is that doing multiple system calls can sometimes result in excessive network packets being sent. The classic example of this is a web-server handling a static file. If the server C<write(2)>s the HTTP headers and then C<write(2)>s the file data, the kernel might send the headers and file in separate network packets. A single packet would be better for latency and bandwidth. L<TCP_CORK|http://baus.net/on-tcp_cork/> is a solution to this issue but it is linux-specific and can require more system calls.
 
-Of course an alternative to vectored-IO is to copy the buffers together into a contiguous buffer before calling C<write(2)>. Its performance trade-off is that a potentially large buffer needs to be allocated and then all the smaller buffers copied into it. Also, if your buffers are backed by memory-mapped files (say with L<File::Map>) then this approach results in an unnecessary copy of the data to userspace. If you use vectored-IO then files can be copied directly from the file-system cache into the socket's L<mbuf|http://www.openbsd.org/cgi-bin/man.cgi?query=mbuf>. The non-standard C<sendfile(2)> system call can theoretically do one fewer copy but it requires a system call for each file sent, unlike vectored-IO.
+Of course an alternative to vectored-IO is to copy the buffers together into a contiguous buffer before calling C<write(2)>. The performance trade-off is that a potentially large buffer needs to be allocated and then all the smaller buffers copied into it. Also, if your buffers are backed by memory-mapped files (created with say L<File::Map>) then this approach results in an unnecessary copy of the data to userspace. If you use vectored-IO then files can be copied directly from the file-system cache into the socket's L<mbuf|http://www.openbsd.org/cgi-bin/man.cgi?query=mbuf>. The non-standard C<sendfile(2)> system call can theoretically do one fewer copy but it requires a system call for each file sent, unlike vectored-IO.
 
-Note that as with anything the performance benefits of vectored-IO will vary from application to application and you shouldn't retro-fit it on an application unless benchmarking has shown measurable benefits. However, vectored-IO can sometimes be more programmer convenient than regular-IO and may be worth using for that reason alone.
+Note that as with anything the performance benefits of vectored-IO will vary from application to application and you shouldn't retro-fit it onto an application unless benchmarking has shown measurable benefits. However, vectored-IO can sometimes be more programmer convenient than regular IO and may be worth using for that reason alone.
 
 
 
 =head1 RETURN VALUES AND ERROR CONDITIONS
 
-As mentioned above, this module's interface mirrors C<syswrite> and C<sysread> so the same caveats that apply to those functions apply to the vectored interfaces. In particular, you should not mix these calls with userspace-buffered interfaces such as L<print> or L<seek>. Mixing the vectored interfaces with C<syswrite> and C<sysread> is fine though.
+As mentioned above, this module's interface tries to match C<syswrite> and C<sysread> so the same caveats that apply to those functions apply to the vectored interfaces. In particular, you should not mix these calls with userspace-buffered interfaces such as L<print> or L<seek>. Mixing the vectored interfaces with C<syswrite> and C<sysread> is fine though.
 
 C<syswritev> returns the number of bytes written (usually the sum of the lengths of all arguments). If it returns less, either there was an error indicated in C<$!> or you are using non-blocking IO in which case it is up to you to adjust it so that the next C<syswritev> points to the rest of the data.
 
@@ -73,7 +73,7 @@ Think about truncating strings like C<sysread> does. Please don't depend on the 
 
 Think about whether this module should support vectors larger than C<IOV_MAX> by calling C<writev>/C<readv> multiple times. This should probably be opt-in because it breaks atomicity guarantees.
 
-Support windows with C<ReadFileScatter>, C<WriteFileGather>, L<WSASend>, and L<WSARecv>.
+Support windows with C<ReadFileScatter>, C<WriteFileGather>, C<WSASend>, and C<WSARecv>.
 
 
 
