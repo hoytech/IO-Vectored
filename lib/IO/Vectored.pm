@@ -49,7 +49,6 @@ __END__
 
 IO::Vectored - Read from or write to multiple buffers at once
 
-
 =head1 WRITE SYNOPSIS
 
     use IO::Vectored;
