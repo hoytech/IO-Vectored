@@ -56,7 +56,11 @@ _backend(fileno, is_write, ...)
             if (!SvPOK(item)) croak("non-string object passed to %s", is_write ? "syswritev" : "sysreadv");
 
             v[i].iov_len = len = SvCUR(item);
-            v[i].iov_base = SvPV(item, len);
+            if (is_write) {
+              v[i].iov_base = SvPV(item, len);
+            } else {
+              v[i].iov_base = SvPV_force(item, len);
+            }
           }
 
           again:
