@@ -4,7 +4,7 @@ use strict;
 
 use Carp;
 
-our $VERSION = '0.103';
+our $VERSION = '0.105';
 
 require Exporter;
 our @ISA = qw(Exporter);
