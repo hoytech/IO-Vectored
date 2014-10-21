@@ -29,13 +29,12 @@ use IO::Vectored;
 
 {
   eval {
-    syswritev(STDOUT, 1);
+    syswritev(STDOUT, {});
   };
 
   my $err = $@;
   like($err, qr/non-string/, "non-string object detected");
 }
-
 
 {
   eval {
