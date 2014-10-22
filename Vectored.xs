@@ -53,7 +53,9 @@ _backend(fileno, is_write, ...)
             if (!is_write && SvREADONLY(item)) croak("Can't modify constant item in sysreadv"); 
 
             SvUPGRADE(item, SVt_PV);
-            if (!SvPOK(item)) croak("non-string object passed to %s", is_write ? "syswritev" : "sysreadv");
+            if (!SvPOK(item) && !SvIOK(item) && !SvNOK(item))
+              croak("non-string object passed to %s", is_write ? "syswritev" : "sysreadv");
+            SvPV_nolen(item);
 
             v[i].iov_len = len = SvCUR(item);
             if (is_write) {
