@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 4;
+use Test::More tests => 3;
 
 use IO::Vectored;
 
@@ -14,12 +14,8 @@ if (!fork) {
   exit;
 }
 
-
-my @vector = (1,123456,0.1,1.34,0x10,"abcd");
-my $str = join '', @vector;
-ok(length($str) % 4 == 0, "chose valid length string");
-
-my $rv = syswritev($w1, @vector) || die "syswritev: $!";
+my $str = "11234560.11.3416abcd";
+my $rv = syswritev($w1, 1,123456,0.1,1.34,0x10,"abcd") || die "syswritev: $!";
 is($rv, length($str), 'syswritev returned right length');
 
 my @vector2 = (' ' x (length($str)/4)) x 4;
