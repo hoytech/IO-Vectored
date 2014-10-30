@@ -1,3 +1,6 @@
+0.110   2014-10-30
+  * Support writing numeric values (thanks Masahiro Nagano)
+
 0.105   2014-06-25
   * If we're going to write to a string, acquire the pointer with SvPV_force
     so that perl copies the underlying string if it is a Copy-On-Write string
