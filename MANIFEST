@@ -5,4 +5,5 @@ MANIFEST
 MANIFEST.SKIP
 t/exceptions.t
 t/normal.t
+t/numeric.t
 Vectored.xs
