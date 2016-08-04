@@ -89,3 +89,11 @@ _get_iov_max()
         RETVAL = IOV_MAX;
     OUTPUT:
         RETVAL
+
+
+int
+_get_pipe_buf()
+    CODE:
+        RETVAL = PIPE_BUF;
+    OUTPUT:
+        RETVAL

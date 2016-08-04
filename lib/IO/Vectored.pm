@@ -36,6 +36,10 @@ sub IOV_MAX() {
   return _get_iov_max();
 }
 
+sub PIPE_BUF() {
+  return _get_pipe_buf();
+}
+
 1;
 
 
@@ -69,6 +73,14 @@ IO::Vectored - Read from or write to multiple buffers at once
     ##  $buf1 eq "abcde"
     ##  $buf2 eq "fg   "
 
+    ## Useful system constants:
+
+    say IO::Vectored::IOV_MAX;
+    ## 1024
+
+    say IO::Vectored::PIPE_BUF;
+    ## 4096
+
 
 
 =head1 DESCRIPTION
@@ -83,9 +95,9 @@ This module is an interface to your system's L<readv(2)|http://pubs.opengroup.or
 
 =head1 ADVANTAGES
 
-The first advantage of vectored-IO is that it reduces the number of system calls required. This provides an atomicity guarantee in that your reads/writes won't be intermingled with the reads/writes of other processes when you aren't expecting it and also eliminates a constant overhead particular to your system.
+The most obvious advantage of vectored-IO is that it can reduce the number of system calls required which may reduce a small overhead particular to your system. This reduction in system calls can also be useful for performing larger atomic writes. For example, when writing to a pipe, only writes of C<PIPE_BUF> (at least 512 bytes, typically at least 4096 bytes) are guaranteed to be atomic (not intermingled with writes from other processes). With vectored-IO, you can achieve larger atomic writes of C<IO::Vectored::IOV_MAX * IO::Vectored::PIPE_BUF> bytes. Although many filesystems implement pipe-like atomicity guarantees, this is not true for all filesystems on all operating systems (ie NFS on Linux).
 
-Another advantage of vectored-IO is that doing multiple system calls can result in excess network packets being sent. The classic example of this is a web-server sending a static file. If the server C<write()>s the HTTP headers and then C<write()>s the file data, the kernel might send the headers and file in separate network packets. Ensuring a single packet is better for latency and bandwidth consumption. L<TCP_CORK|http://baus.net/on-tcp_cork/> is a solution to this issue but it is Linux-specific and requires more system calls.
+Another advantage of vectored-IO is that doing multiple system calls can result in excess network packets being sent. The classic example of this is a web-server sending a static file. If the server C<write()>s the HTTP headers and then C<write()>s the file data, the kernel might send the headers and file in separate network packets. Ensuring a single packet is better for latency and bandwidth consumption. L<TCP_CORK|http://baus.net/on-tcp_cork> is a solution to this issue but it is Linux-specific and requires more system calls.
 
 Of course an alternative to vectored-IO is to copy the buffers together into a contiguous buffer before calling C<write(2)>. The performance trade-off of this is that a potentially large buffer needs to be allocated and then all the smaller buffers copied into it. Also, if your buffers are backed by memory-mapped files (created with L<File::Map> for instance) then this approach results in an unnecessary copy of the data to userspace. If you use vectored-IO then files can be copied directly from the file-system cache into the socket's L<mbuf|http://www.openbsd.org/cgi-bin/man.cgi?query=mbuf>.
 
@@ -102,9 +114,9 @@ C<syswritev> returns the number of bytes written (usually the sum of the lengths
 
 C<sysreadv> returns the number of bytes read up to the sum of the lengths of all arguments. Note that unlike C<sysread>, C<sysreadv> will not truncate any buffers (see the L<READ SYNOPSIS> above and the L<TODO> below).
 
-Both of these functions can also return C<undef> if the underlying C<readv(2)> or C<writev(2)> system calls fail for any reason other than C<EINTR>. When undef is returned, C<$!> will be set with the error.
+Both of these functions can also return C<undef> if the underlying C<readv(2)> or C<writev(2)> system calls fail for a reason other than C<EINTR> (commonly C<EAGAIN> on non-blocking sockets). When undef is returned, C<$!> will be set with the error.
 
-Like C<sysread>/C<syswrite>, the vectored versions also croak for various reasons such as passing in too many arguments (more than C<IO::Vectored::IOV_MAX>), trying to use a closed file-handle, or trying to write to a read-only/constant string. See the C<t/exceptions.t> test for a full list.
+Like C<sysread>/C<syswrite>, the vectored versions may also croak for various reasons such as passing in too many arguments (more than C<IO::Vectored::IOV_MAX>), trying to use a closed file-handle, or trying to write to a read-only/constant string. See the C<t/exceptions.t> test for a full list. If you exceed C<IOV_MAX> then some systems will attempt to do extra work in user-space to "fix" it for you. For example, on Linux the glibc wrapper functions around C<readv()>/C<writev()> will fall back to C<read()>/C<write()> by allocating temporary buffers and copying your supposedly vectored data into them. Note however that L<IO::Vectored> checks if you are exceeding C<IOV_MAX> prior to the call so it will croak in this case, even on Linux.
 
 Although not specific to vectored-IO, when accessing C<mmap()>ed memory, a SIGBUS signal can kill your process if another process truncates the backing file while you are accessing it.
 
@@ -132,7 +144,6 @@ As well as a Linux-like C<sendfile()>, Solaris has a fully vectorised interface 
 As if all the above caveats weren't enough, many C<sendfile()> implementations will only work when sending from a file (obviously) and to a network socket (less obviously). So in order for your code to be fully general and portable you may have to implement one code path that uses C<sendfile()> and one that doesn't.
 
 How are those minimalist design principles of unix sounding now? :) 
-
 
 
 
@@ -177,7 +188,7 @@ Doug Hoyte, C<< <doug@hcsw.org> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2013-2014 Doug Hoyte.
+Copyright 2013-2016 Doug Hoyte.
 
 This module is licensed under the same terms as perl itself.
 
